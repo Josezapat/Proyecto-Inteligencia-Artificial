@@ -5,22 +5,22 @@ import QRPortalWeb from "@bot-whatsapp/portal";
 import BaileysProvider from "@bot-whatsapp/provider/baileys";
 import MockAdapter from "@bot-whatsapp/database/mock";
 
-import chatgpt from "./services/openai/chatgpt.js";
 import GoogleSheetService from "./services/sheets/index.js";
+import { createOpenAICompletion } from './services/openai/chatgpt.js';
+
 
 const googelSheet = new GoogleSheetService(
-  "1rDDWdRcLmecRhDSepMZdJwxMIp8iOxZMjDKuh2dA6W8"
+  "1mMmK3-QGa1GcOYndz3mibReDx2zg0-p2UyltklTWfes"
 );
 
 const GLOBAL_STATE = [];
 
 const flowPrincipal = bot
-  .addKeyword(["hola", "hi"])
+  .addKeyword(["taquitos"])
   .addAnswer([
-    `Bienvenidos a mi restaurante de cocina economica automatizado! 🚀`,
+    `Bienvenido al Comedor de la UNI`,
     `Tenemos menus diarios variados`,
-    `Te gustaria conocerlos ¿?`,
-    `Escribe *menu*`,
+    `Escribe *menu* para mandarte la lista de comidas`,
   ]);
 
 const flowMenu = bot
@@ -38,11 +38,11 @@ const flowMenu = bot
     }
   )
   .addAnswer(
-    `Te interesa alguno?`,
+    `¿Que te gustaría comer?`,
     { capture: true },
     async (ctx, { gotoFlow, state }) => {
       const txt = ctx.body;
-      const check = await chatgpt.completion(`
+      const check = await createOpenAICompletion(`
     Hoy el menu de comida es el siguiente:
     "
     ${GLOBAL_STATE.join("\n")}
@@ -52,8 +52,8 @@ const flowMenu = bot
     La orden del cliente
     `);
 
-      const getCheck = check.data.choices[0].text
-        .trim()
+    const getCheck = check && check.data && check.data.choices && check.data.choices[0] ? check.data.choices[0].text.trim().replace("\n", "").replace(".", "").replace(" ", "") : 'No se pudo obtener la respuesta de OpenAI'
+    .trim()
         .replace("\n", "")
         .replace(".", "")
         .replace(" ", "");
@@ -83,14 +83,21 @@ const flowPedido = bot
     }
   )
   .addAnswer(
-    "¿Alguna observacion?",
+    "¿Cual es tu codigo?",
+    { capture: true },
+    async (ctx, { state }) => {
+      state.update({ codigo: ctx.body });
+    }
+  )
+  .addAnswer(
+    "¿Tienes alguna observacion?",
     { capture: true },
     async (ctx, { state }) => {
       state.update({ observaciones: ctx.body });
     }
   )
   .addAnswer(
-    "Perfecto tu pedido estara listo en un aprox 20min",
+    "Perfecto tu comida estará lista en el Comedor universitario",
     null,
     async (ctx, { state }) => {
         const currentState = state.getMyState();
